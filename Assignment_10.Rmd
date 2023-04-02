@@ -1,0 +1,14 @@
+---
+title: "Assignment 10"
+author: "Chee Kay Cheong"
+output: github_document
+---
+
+```{r setup, message = FALSE, warning = FALSE}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
+
+library(tidyverse)
+library(caret)
+library(rpart.plot)
+```
+
