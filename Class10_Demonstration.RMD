@@ -8,16 +8,22 @@ output: github_document
 knitr::opts_chunk$set(message = FALSE, warning = FALSE)
 
 library(tidyverse)
-
+library(caret)
+library(rpart.plot)
 ```
 
 ## In-class Exercise:
 
 1. What are some limitations of these data that may impact your ability to draw inferences from your analysis?
 
+
+
 2. Sketch out an analytic pipeline to address your task. Similar to Assignment 7, your pipeline should include the following components:
-   * Data Preparation
-   * Partitioning/Resampling
+   * Data Preparation: same process as we have done for prediction.
+   * Partitioning/Resampling: depends on our research question. In feature selections, we assume that what's important for prediction is also important for causality. 
+     In machine learning, the algorithms we used build the "best" model and show us the importance of each variable, helping us to identify which variables are important for
+     predictions, which in turn these are also the variables important for hypothesis testing. The assumptions we made rely on the validity of the prediction. 
+     In short, partitioning is still important in unsupervised learning.
    * Tuning of Hyperparameters
    * Evaluation
 
@@ -31,12 +37,8 @@ library(tidyverse)
 Reminder: Merging into a single data frame is optional. Depends upon how you program. This example will assume you've merged everything into a single data frame.
 
 ```{r dataprep}
-library(tidyverse)
-library(caret)
-library(rpart.plot)
-
-#Load data using path of where file is stored
-load("C:/Users/js5406/Downloads/exposome.RData")
+# Load data using path of where file is stored
+load("./exposome.RData")
 
 #Merge all data frames into a single data frame. FYI, this is just a shortcut by combining baseR with piping from tidyverse. There are other ways of merging across three data frames that are likely more elegant.
 
@@ -121,7 +123,6 @@ data.frame(
   RMSE = RMSE(model.3.pred, test.data$e3_bw),
   Rsquare = R2(model.3.pred, test.data$e3_bw)
 )
-
 ```
 
 
