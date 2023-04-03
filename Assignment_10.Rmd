@@ -9,10 +9,12 @@ knitr::opts_chunk$set(message = FALSE, warning = FALSE)
 
 library(tidyverse)
 library(caret)
-library(rpart.plot)
+library(glmnet)
 ```
 
 # Part 1
+
+### Data Exploratory Analyses
 
 ```{r}
 # Load data file
@@ -96,9 +98,70 @@ round(cor(HW10[c('h_trafload_preg_pow1over3', 'e3_asmokcigd_p_None', 'h_pm10_rat
 
 # Part 2
 
-Develop a single research question. It can be a prediction or hypothesis generating research question. It doesn't need to involve all features but it must involve at least one outcome from phenotype and 5 features from exposome (and covariates if relevant). This can be as simple or complex as a question as you want it to be. Clearly state the research question in a complete sentence outside of a code chunk, not as a comment within one.
+### Research question 
 
+What factors best predict the risk of asthma in children ages between 6-11 years of age from the HELIX cohort?
 
+# Part 3
 
+Since the `HW10` dataset contains more than 200 variables, I decided to perform feature selection using **LASSO** to reduce the number of variables in the dataset while retaining as much of the original variation as possible. This can help simplify further analysis (such as random forest, logistic regression, etc.) and improve computational efficiency.
 
+### LASSO
+```{r}
+set.seed(123)
+
+asthma_lasso = HW10
+
+# Find correlated predictors to remove variables that are highly correlated
+# Correlation can only be done with numeric variables, so need to filter out the non-numeric variables
+asthma.numeric = 
+  asthma_lasso %>% 
+  select(where(is.numeric))
+
+# Calculate correlations
+correlations = cor(asthma.numeric, use = "complete.obs")
+
+# Find any features that are correlated at 0.7 and above
+high.correlations = findCorrelation(correlations, cutoff = 0.7) 
+
+# Remove highly correlated features
+asthma_lasso = asthma_lasso[ , -high.correlations]
+
+# Partition data into 70/30 split
+train.index = 
+  asthma_lasso$hs_asthma %>% createDataPartition(p = 0.7, list = F)
+
+train_data = asthma_lasso[train.index, ]
+test_data = asthma_lasso[-train.index, ]
+```
+
+```{r}
+set.seed(123)
+
+control.settings = trainControl(method = "cv", number = 10, sampling = "up")
+
+lambda = 10^seq(-3, -1, length = 100)
+
+LASSO = train(hs_asthma ~ ., data = train_data, method = "glmnet", trControl = control.settings, preProcess = c("center", "scale"), tuneGrid = expand.grid(alpha = 1, lambda = lambda))
+
+# Output best value of alpha & lambda
+LASSO$finalModel$tuneValue
+LASSO$bestTune
+LASSO$results
+
+confusionMatrix(LASSO)
+
+coef(LASSO$finalModel, LASSO$bestTune$lambda)
+varImp(LASSO)
+```
+
+```{r}
+# Test model
+test_outcome = predict(LASSO, test_data)
+
+# Evaluation metric:
+confusionMatrix(test_outcome, test_data$hs_asthma, positive = '1')
+```
+
+Based on the variable importance, we know which variables in the dataset are the most important to predict the outcome (asthma). From there, we can reduce the number of features in our dataset by selecting only the variables as indicated by the variable importance. Then, we can do further analysis using different algorithms such as random forest or logistic regression to predict our outcome of interest. 
 
